@@ -34,3 +34,6 @@ Pulling intersections by cities can get really slow since a city like "Los Angel
 To get street names, pull the nearest lat/lon from phone and call the get_nearest_streets function
 
 Map network types are set to DRIVE
+
+The database size for a zip code is around 1.5MB
+Database names follow the template: intersections_ZIPCODE where ZIPCODE is the zipcode of interest
