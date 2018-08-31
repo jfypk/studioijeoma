@@ -34,7 +34,7 @@ def get_geo_data_by_zip(zipcode):
         index += 1
     return results
 
-def get_nearest_streetnames(location_tuple, distFromPoint = 100):
+def get_nearest_streetnames(location_tuple, distFromPoint = 50):
     """This function retrieves the nearest streets of a coordinate tuple (lat, lon). Currently set to drive network. Edit the parameters in line 40 to fit your preferences."""
     try: 
         G = ox.graph_from_point(location_tuple, network_type='drive', distance=distFromPoint)
@@ -142,14 +142,13 @@ cur = con.cursor()
 create_geo_db("resources/zip_codes_states.csv")
 
 #handle zipcode input (Connect to Mobile App here)
-z = '11354'
+z = '94608'
 
 #create db of lat/lon intersections 
 geodata = get_geo_data_by_zip(z)
 create_intersections_db_by_zip(geodata)
 
 #intersections data
-
 db = "intersections_" + z
 data = get_intersections_data_from_db(db)
 data = data[0]
@@ -159,11 +158,13 @@ state = data[2]
 county = data[3]
 str_latlon = data[4]
 arr_latlon = strListToList(str_latlon)
+num_intersections = len(arr_latlon)
+
 print("\n")
 print("\n")
 print("\n")
 print("Intersection data for " + city + " " + state + " " + county + " " + zipcode)
-print(str(len(arr_latlon)) + " intersections found")
+print(str(num_intersections) + " intersections found")
 print("------------------")
 print(str_latlon)
 print("------------------")
@@ -173,17 +174,20 @@ print("\n")
 
 #get closest street names for specific intersection
 #Note: better to call this function than to list in database as database will be too big for zip codes with large number of intersections
-latlon_tuple = (40.78171239999999, -73.824605)
+latlon_tuple = arr_latlon[int(num_intersections/2)]
 closest_streets = get_nearest_streetnames(latlon_tuple)
+
 print("\n")
 print("\n")
 print("\n")
-print("CLOSEST STREETS")
+print("CLOSEST STREETS TO " + str(latlon_tuple))
 print("------------------")
 print(closest_streets)
 print("------------------")
 print("\n")
 print("\n")
 print("\n")
+
+#commit and close database
 con.commit()
 con.close()
