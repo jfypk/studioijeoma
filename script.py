@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import geopandas as gpd
 import networkx as nx
+import ast
+
+"""----------------Define helper functions----------------"""
 
 def create_geo_db(csv_path):
     """This function creates a geo database of all zipcodes, cities, states, and counties in the United States"""
@@ -31,10 +34,10 @@ def get_geo_data_by_zip(zipcode):
         index += 1
     return results
 
-def get_nearest_streetnames(location_tuple):
-    """This function retrieves the nearest streets of a coordinate tuple (lat, lon). Currently set to drive network and a distance of 100m. Edit the parameters in line 37 to fit your preferences."""
+def get_nearest_streetnames(location_tuple, distFromPoint = 100):
+    """This function retrieves the nearest streets of a coordinate tuple (lat, lon). Currently set to drive network. Edit the parameters in line 40 to fit your preferences."""
     try: 
-        G = ox.graph_from_point(location_tuple, network_type='drive', distance=100)
+        G = ox.graph_from_point(location_tuple, network_type='drive', distance=distFromPoint)
         G = ox.project_graph(G)
         ints = ox.clean_intersections(G)
 
@@ -70,7 +73,7 @@ def create_intersections_db_by_zip(data):
     tablename = "intersections_" + str(zipcode)
     
     try: 
-        cur.execute("CREATE TABLE " + tablename + " (zip_code TEXT, city TEXT, state TEXT, county TEXT, latlon_array TEXT, latlon_str TEXT, streetnames_array TEXT, streetnames_str TEXT);")
+        cur.execute("CREATE TABLE " + tablename + " (zip_code TEXT, city TEXT, state TEXT, county TEXT, latlon_str TEXT);")
 
         latlon_array = []
         streetname_array = []
@@ -103,64 +106,84 @@ def create_intersections_db_by_zip(data):
         
         latlon_array_str = str(latlon_array).strip('[]')
         # streetname_array_str = str(streetname_array).strip('[]')
-        streetname_array_str = ""
 
-        to_db = [zipcode, city, state, county, latlon_array_str, streetname_array_str]
-        cmd = "INSERT INTO " + tablename + " (zip_code, city, state, county,latlon_str, streetnames_str) VALUES (?, ?, ?, ?, ?, ?);"
+        to_db = [zipcode, city, state, county, latlon_array_str]
+        cmd = "INSERT INTO " + tablename + " (zip_code, city, state, county,latlon_str) VALUES (?, ?, ?, ?, ?);"
         cur.execute(cmd, to_db)
-
-        # latlon_data = myListToStr(latlon_array)
-        # # latlon_data = pickle.dumps(latlon_array, pickle(type,).HIGHEST_PROTOCOL)
-        # cur.execute("INSERT INTO " + tablename + "(latlon_array) values (:data)", sqlite3.Binary(latlon_data))
-
-        # streetname_data = pickle.dumps(streetname_array, pickle(type,).HIGHEST_PROTOCOL)
-        # cur.execute("INSERT INTO " + tablename + "(streetnames_array) values (:data)", sqlite3.Binary(streetname_data))
         
         for row in cur.execute("SELECT * from " + tablename):
             print(row)
     except:
         print(tablename + " already exists")
 
-def myListToStr(myList):
-    """This method takes a list of (lat, lon) tuples and converts them to a string"""
+def get_intersections_data_from_db(db):
+    """
+        This function returns all the data from db table in an array. 
+    """
+    data = []
+    for row in cur.execute("SELECT * from " + db):
+        data.append(row)
+    return data
 
-    strList = ""
-    for item in myList:
-        lat, lon = item #split the tuple
+def strListToList(strList):
+    x = ast.literal_eval(strList)
+    return x
 
-        strList += "{}:{} ".format(lat, lon) #append the tuple in "lat:lon" format with a " " delimiter
+"""----------------Begin Script----------------"""
 
-    return strList[:-1] #remove the final space (unneeded)
-
-def strToMyList(myStr):
-    """This method takes a string in the format "int:str int:str int:str..."
-    and converts it to a list of (lat, lon) tuples"""
-
-    myList = []
-    for tup in myStr.split(" "): #for each converted tuple
-        lat, lon = tup.split(":") #split the tuple
-
-        latlon_tuple = (lat, lon)
-        myList.append(latlon_tuple)
-
-    return myList
-
-def create_intersections_db_by_city(data): 
-    """This function creates a database of the coordinates and streets of all intersections in a given city. Currently set to drive network and a radius of 1610m (1 mile). I do NOT recommend this method as a city like Los Angeles has many intersections and this process will take a long long time."""
-    return
-
-
+#configure osmnx 
 ox.config(use_cache=True, log_console=True)
 
+#connect to sqlite3 database
 con = sqlite3.connect("geo.sq3")
 cur = con.cursor()
 
+#create database with geo data
 create_geo_db("resources/zip_codes_states.csv")
+
+#handle zipcode input (Connect to Mobile App here)
 z = '11354'
-data = get_geo_data_by_zip(z)
-create_intersections_db_by_zip(data)
 
-print(get_nearest_streetnames((40.78171239999999, -73.824605)))
+#create db of lat/lon intersections 
+geodata = get_geo_data_by_zip(z)
+create_intersections_db_by_zip(geodata)
 
+#intersections data
+
+db = "intersections_" + z
+data = get_intersections_data_from_db(db)
+data = data[0]
+zipcode = data[0]
+city = data[1]
+state = data[2]
+county = data[3]
+str_latlon = data[4]
+arr_latlon = strListToList(str_latlon)
+print("\n")
+print("\n")
+print("\n")
+print("Intersection data for " + city + " " + state + " " + county + " " + zipcode)
+print(str(len(arr_latlon)) + " intersections found")
+print("------------------")
+print(str_latlon)
+print("------------------")
+print("\n")
+print("\n")
+print("\n")
+
+#get closest street names for specific intersection
+#Note: better to call this function than to list in database as database will be too big for zip codes with large number of intersections
+latlon_tuple = (40.78171239999999, -73.824605)
+closest_streets = get_nearest_streetnames(latlon_tuple)
+print("\n")
+print("\n")
+print("\n")
+print("CLOSEST STREETS")
+print("------------------")
+print(closest_streets)
+print("------------------")
+print("\n")
+print("\n")
+print("\n")
 con.commit()
 con.close()
