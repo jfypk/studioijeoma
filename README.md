@@ -17,14 +17,20 @@ If you are pip installing from Windows, please follow instructions for [geopanda
 
 It's easiest to use conda-forge to get these dependencies installed. If you have any trouble with the installation, read the [docs](https://osmnx.readthedocs.io/en/stable/).
 
-If you want to change from walk network to drive network: 
+# Instructions
 
-Enter zip code and go
+Script is located in the script.py file. To run, navigate to the folder and enter the following command in your terminal:
 
+```
+python script.py
+```
 
 # Notes
 
-Pull coordinates of intersections by zipcodes
+The script pulls lat/lon coordinates of intersections by zipcode.
 
-Gets really slow if we try to pull streetnames as well, especially if zip code has lots of intersections. 
-Best way to do this is to get lat, lon data of phone and call the get_nearest_streets function
+Pulling intersections by cities can get really slow since a city like "Los Angeles" has a myriad of intersections. It is also slow to pull streetnames into the database, especially if a zipcode has a lot of intersections. 
+
+To get street names, pull the nearest lat/lon from phone and call the get_nearest_streets function
+
+Map network types are set to DRIVE
