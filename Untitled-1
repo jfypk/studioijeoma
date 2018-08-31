@@ -1,0 +1,53 @@
+def create_intersectionsdb_by_zipcode(zipcode):
+    cur.execute("CREATE TABLE intersections (id INTEGER PRIMARY KEY, zip_code TEXT, coordinates_blob NONE, coordinates_str TEXT, street_name_blob NONE, street_name_str TEXT);")
+    try: 
+        G = ox.graph_from_address(zipcode, network_type='walk', distance=1610)
+        G_proj = ox.project_graph(G)
+        # clean up the intersections and extract their xy coords
+        intersections = ox.clean_intersections(G_proj, tolerance=15, dead_ends=False)
+        points = np.array([point.xy for point in intersections])
+
+        gdf = gpd.GeoDataFrame(geometry=intersections)
+        gdf.crs = G_proj.graph['crs']
+        latlon_csv = ox.project_gdf(gdf, to_latlong=True).to_csv()
+
+        reader = csv.reader(latlon_csv, delimiter=',')
+
+        for row in reader: 
+            to_db = row[1]
+            cur.execute("INSERT INTO intersections (coordinates_blob) VALUES (?);", to_db)
+    except: 
+        pass
+
+
+def get_nearest_streetnames(location_tuple):
+    G = ox.graph_from_point(location_tuple, network_type='walk', distance=100)
+    G = ox.project_graph(G)
+    ints = ox.clean_intersections(G)
+
+    gdf = gpd.GeoDataFrame(ints, columns=['geometry'], crs=G.graph['crs'])
+    X = gdf['geometry'].map(lambda pt: pt.coords[0][0])
+    Y = gdf['geometry'].map(lambda pt: pt.coords[0][1])
+
+    nodes = ox.get_nearest_nodes(G, X, Y, method='kdtree')
+    connections = {}
+    streetnames = []
+
+    for n in nodes:
+        connections[n] = set([])
+        for nbr in nx.neighbors(G, n):
+            for d in G.get_edge_data(n, nbr).values():
+                print(d)
+                if 'name' in d:
+                    if type(d['name']) == str:
+                        connections[n].add(d['name'])
+                        streetnames.append(d['name'])
+                    elif type(d['name']) == list:
+                        for name in d['name']:
+                            connections[n].add(name)
+                    else:
+                        connections[n].add(None)
+                else:
+                    connections[n].add(None)
+    print(set(streetnames))
+    return set(streetnames)

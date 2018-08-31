@@ -1,0 +1,8 @@
+2018-08-23 13:44:39,153 INFO osmnx Configured osmnx
+2018-08-23 13:44:48,645 INFO osmnx Pausing 1.00 seconds before making API GET request
+2018-08-23 13:44:49,649 INFO osmnx Requesting https://nominatim.openstreetmap.org/search?format=json&limit=1&dedupe=0&polygon_geojson=1&q=Manhattan+Island%2C+New+York%2C+New+York%2C+USA with timeout=30
+2018-08-23 13:44:50,431 INFO osmnx Downloaded 83.9KB from nominatim.openstreetmap.org in 0.78 seconds
+2018-08-23 13:44:50,441 INFO osmnx Saved response to cache file "cache/44422ed6b748801f43422a3578cf6431.json"
+2018-08-23 13:44:50,442 INFO osmnx Created GeoDataFrame with 1 row for query "Manhattan Island, New York, New York, USA"
+2018-08-23 13:44:50,466 INFO osmnx Saved the GeoDataFrame "Manhattan Island, New York, New York, USA" as shapefile "data/usa-new_york-new_york-manhattan_island"
+2018-08-23 13:44:50,471 INFO osmnx Projected the GeoDataFrame "Manhattan Island, New York, New York, USA" to UTM-18 in 0.00 seconds
