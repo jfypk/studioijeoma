@@ -116,6 +116,61 @@ def create_intersections_db_by_zip(data):
     except:
         print(tablename + " already exists")
 
+def create_intersections_bigdb_by_city(data):
+    """This function creates a database of the coordinates and streets of all intersections in a mile radius of a given zipcode. Currently set to drive network and a radius of 1610m (1 mile). Edit the parameters in line 81 to fit your preferences"""
+    d = data[1]
+    zipcode = d[1]
+    city = d[2]
+    state = d[3]
+    county = d[4]
+    
+    tablename = "intersections_" + str(city)
+    
+    try: 
+        cur.execute("CREATE TABLE " + tablename + " (zip_code TEXT, city TEXT, state TEXT, county TEXT, latlon_str TEXT, streetnames_str TEXT);")
+
+        latlon_array = []
+        streetname_array = []
+        latlon_array_str = ""
+        streetname_array_str = ""
+
+        try:
+            place = city + ', ' + county + ', ' + state + ", USA "
+            G = ox.graph_from_place(place, network_type='drive', distance=1610, retain_all = True, simplify = True)
+            G_proj = ox.project_graph(G)
+            # clean up the intersections and extract their xy coords
+            intersections = ox.clean_intersections(G_proj, tolerance=15, dead_ends=False)
+            # points = np.array([point.xy for point in intersections])
+
+            gdf = gpd.GeoDataFrame(geometry=intersections)
+            gdf.crs = G_proj.graph['crs']
+            lonlat = ox.project_gdf(gdf, to_latlong=True)
+            a = lonlat['geometry'].tolist()
+            for coord in a:
+                lon = coord.x
+                lat = coord.y
+                latlon_tuple = (lat, lon)
+
+                nearest_streets = get_nearest_streetnames(latlon_tuple)
+                
+                streetname_array.append(nearest_streets)
+                latlon_array.append(latlon_tuple)
+        except:
+            #THROW A WARNING THAT THERE IS NO LAT/LON DATA FOR THIS ZIPCODE
+            pass
+        
+        latlon_array_str = str(latlon_array).strip('[]')
+        streetname_array_str = str(streetname_array).strip('[]')
+
+        to_db = [zipcode, city, state, county, latlon_array_str]
+        cmd = "INSERT INTO " + tablename + " (zip_code, city, state, county,latlon_str, streetname_array_str) VALUES (?, ?, ?, ?, ?, ?);"
+        cur.execute(cmd, to_db)
+        
+        for row in cur.execute("SELECT * from " + tablename):
+            print(row)
+    except:
+        print(tablename + " already exists")
+
 def get_intersections_data_from_db(db):
     """
         This function returns all the data from db table in an array. 
